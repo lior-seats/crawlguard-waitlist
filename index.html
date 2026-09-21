@@ -620,6 +620,9 @@
     </div>
 
     <p class="form-note">No spam. No credit card. Unsubscribe anytime.</p>
+    <p style="text-align:center;margin-top:12px;font-size:0.88rem;opacity:0.75">
+      Ready to start immediately? <a href="#" id="checkout-btn" style="color:#e94560;font-weight:600">Get early access at $19/month →</a>
+    </p>
   </div>
 </div>
 
@@ -632,6 +635,18 @@
 </footer>
 
 <script>
+  document.getElementById('checkout-btn').addEventListener('click', async function(e) {
+    e.preventDefault();
+    try {
+      var res = await fetch('https://agent-control-plane-w3m9.onrender.com/api/checkout/session', {
+        method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({})
+      });
+      var data = await res.json();
+      if (data.ok && data.url) { window.location.href = data.url; }
+      else { alert('Checkout coming soon! Join the waitlist above to get notified when we launch.'); }
+    } catch(e) { alert('Coming soon — join the waitlist to get early access!'); }
+  });
+
   document.querySelectorAll('form').forEach(function(form) {
     form.addEventListener('submit', async function(e) {
       e.preventDefault();
