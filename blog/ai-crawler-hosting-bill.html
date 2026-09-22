@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Is an AI Crawler Spiking Your Hosting Bill? How to Diagnose and Stop It</title>
+  <meta name="description" content="Unexpected Vercel, Cloudflare, or AWS bandwidth spike? AI crawlers like GPTBot and Bytespider are a common culprit. Learn how to identify the bot and stop the billing bleed." />
+  <link rel="canonical" href="https://lior-seats.github.io/crawlguard-waitlist/blog/ai-crawler-hosting-bill.html" />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://lior-seats.github.io/crawlguard-waitlist/blog/ai-crawler-hosting-bill.html" />
+  <meta property="og:title" content="Is an AI Crawler Spiking Your Hosting Bill? How to Diagnose and Stop It" />
+  <meta property="og:description" content="AI crawlers from OpenAI, Meta, and ByteDance are behind thousands of unexpected hosting bill spikes. Here's how to diagnose which bot is costing you money." />
+  <meta property="og:image" content="https://lior-seats.github.io/crawlguard-waitlist/og-image.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <style>
+    :root {
+      --bg: #0d0f14; --surface: #141720; --surface2: #1b1f2c;
+      --border: #252a38; --accent: #4f6ef7; --accent-h: #6b85ff;
+      --danger: #f75c5c; --text: #e8eaf2; --muted: #8890a8;
+      --success: #34d399; --radius: 10px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.7; font-size: 16px; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { color: var(--accent-h); text-decoration: underline; }
+    nav { display: flex; align-items: center; justify-content: space-between; padding: 1.2rem 2rem; border-bottom: 1px solid var(--border); background: rgba(13,15,20,0.95); position: sticky; top: 0; z-index: 100; }
+    .logo { font-weight: 700; font-size: 1.1rem; color: var(--text); display: flex; align-items: center; gap: 0.5rem; }
+    .logo span { color: var(--accent); }
+    .nav-cta { background: var(--accent); color: #fff; padding: 0.4rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; }
+    .nav-cta:hover { background: var(--accent-h); color: #fff; text-decoration: none; }
+    main { max-width: 760px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+    .breadcrumb { font-size: 0.85rem; color: var(--muted); margin-bottom: 1.5rem; }
+    .breadcrumb a { color: var(--muted); }
+    h1 { font-size: 2rem; font-weight: 800; line-height: 1.25; margin-bottom: 1rem; letter-spacing: -0.03em; }
+    .meta { color: var(--muted); font-size: 0.875rem; margin-bottom: 2.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1.5rem; }
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.5rem 0 0.75rem; color: var(--text); }
+    h3 { font-size: 1.1rem; font-weight: 600; margin: 1.5rem 0 0.5rem; color: var(--text); }
+    p { margin-bottom: 1rem; color: #cdd1e0; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; color: #cdd1e0; }
+    li { margin-bottom: 0.5rem; }
+    pre { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; overflow-x: auto; margin: 1.25rem 0; font-size: 0.875rem; line-height: 1.6; }
+    code { font-family: 'SF Mono', 'Fira Code', monospace; background: var(--surface2); padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.875em; color: #a8d8a8; }
+    pre code { background: none; padding: 0; color: #c9d1e0; }
+    .comment { color: var(--muted); }
+    .callout { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: var(--radius); padding: 1.25rem 1.5rem; margin: 2rem 0; }
+    .callout-warn { border-left-color: #f7b55c; }
+    .callout-danger { border-left-color: var(--danger); }
+    .callout h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text); }
+    .step-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin: 1.25rem 0; }
+    .step-num { display: inline-block; background: var(--accent); color: #fff; width: 28px; height: 28px; border-radius: 50%; text-align: center; line-height: 28px; font-weight: 700; font-size: 0.875rem; margin-right: 0.5rem; vertical-align: middle; }
+    .cost-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin: 1.5rem 0; }
+    .cost-table th { background: var(--surface2); text-align: left; padding: 0.6rem 1rem; border: 1px solid var(--border); color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .cost-table td { padding: 0.65rem 1rem; border: 1px solid var(--border); color: #cdd1e0; }
+    .cost-table tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+    .highlight-row td { background: rgba(247,92,92,0.07) !important; color: var(--danger) !important; font-weight: 600; }
+    .cta-box { background: linear-gradient(135deg, rgba(79,110,247,0.12), rgba(79,110,247,0.06)); border: 1px solid rgba(79,110,247,0.3); border-radius: 14px; padding: 2rem; margin: 3rem 0; text-align: center; }
+    .cta-box h3 { font-size: 1.25rem; margin-bottom: 0.5rem; margin-top: 0; }
+    .cta-box p { margin-bottom: 1.25rem; }
+    .cta-btn { display: inline-block; background: var(--accent); color: #fff; padding: 0.75rem 1.75rem; border-radius: 8px; font-weight: 700; font-size: 0.95rem; }
+    .cta-btn:hover { background: var(--accent-h); color: #fff; text-decoration: none; }
+    .cta-btn-secondary { display: inline-block; border: 1px solid rgba(79,110,247,0.5); color: var(--accent); padding: 0.65rem 1.5rem; border-radius: 8px; font-weight: 600; font-size: 0.9rem; margin-left: 0.75rem; }
+    footer { text-align: center; padding: 2rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.875rem; }
+  </style>
+</head>
+<body>
+<nav>
+  <a href="https://lior-seats.github.io/crawlguard-waitlist/" class="logo">🛡️ <span>CrawlGuard</span></a>
+  <a href="https://lior-seats.github.io/crawlguard-waitlist/" class="nav-cta">Join Waitlist →</a>
+</nav>
+
+<main>
+  <div class="breadcrumb">
+    <a href="https://lior-seats.github.io/crawlguard-waitlist/">CrawlGuard</a> / Blog /
+    <span>AI Crawler Hosting Bill Spike</span>
+  </div>
+
+  <h1>Is an AI Crawler Spiking Your Hosting Bill? How to Diagnose and Stop It</h1>
+  <div class="meta">September 2026 · 10 min read · <a href="https://lior-seats.github.io/crawl-check/">Check your site's exposure free →</a></div>
+
+  <p>You open your Vercel dashboard on a Monday morning and see your bandwidth usage has tripled. Or your AWS bill jumped $200 compared to last month. Your traffic looks normal. No deployment changes. No viral post.</p>
+
+  <p>There's a very good chance an AI crawler is the culprit.</p>
+
+  <p>Since 2023, AI companies have been aggressively crawling the web to build training datasets for their models. The bots — GPTBot (OpenAI), ClaudeBot (Anthropic), Bytespider (ByteDance), meta-externalagent (Meta), and others — don't show up in your analytics because they're not browsers. But they absolutely show up in your bandwidth bill.</p>
+
+  <h2>Step 1: Confirm it's a bot, not a traffic spike</h2>
+
+  <p>The first step is ruling out legitimate traffic. Signs that point to a bot rather than a real traffic spike:</p>
+  <ul>
+    <li>Bandwidth increased but pageviews in Google Analytics / Plausible stayed flat</li>
+    <li>High bandwidth to pages that normally get little traffic</li>
+    <li>Requests hitting old or obscure URLs across your whole site (crawlers tend to follow every link)</li>
+    <li>Traffic from data center IP ranges rather than residential/mobile IPs</li>
+    <li>Requests at unusual hours with no geographic correlation to your user base</li>
+  </ul>
+
+  <h2>Step 2: Find the culprit in your server logs</h2>
+
+  <p>Every major hosting platform gives you access to raw access logs. Look for the <code>User-Agent</code> field — that's how you identify the bot.</p>
+
+  <div class="step-box">
+    <p><span class="step-num">1</span> <strong>Vercel:</strong> Go to your project → <strong>Analytics</strong> → check if Vercel Analytics is enabled. For raw logs, you need Vercel Log Drain (Enterprise feature) or check your <code>_logs</code> endpoint if configured.</p>
+    <p style="margin-top:0.75rem;margin-left:2rem;font-size:0.875rem;color:var(--muted)">Alternative: Check your Vercel usage dashboard for unusual bandwidth spikes by day — this narrows the timeframe before you dig into logs.</p>
+  </div>
+
+  <div class="step-box">
+    <p><span class="step-num">2</span> <strong>Cloudflare:</strong> Go to <strong>Analytics → Traffic</strong>. Under "Bots," you'll see automated traffic. For User-Agent breakdown, use the <strong>Firewall → Events</strong> log or <strong>Workers Analytics</strong> if you have a Worker in front of your origin.</p>
+  </div>
+
+  <div class="step-box">
+    <p><span class="step-num">3</span> <strong>AWS / nginx / Apache:</strong> Search your access logs for known AI bot User-Agents:</p>
+    <pre><code><span class="comment"># Find AI crawler requests in nginx/Apache access logs</span>
+grep -E "GPTBot|ClaudeBot|anthropic-ai|Bytespider|meta-externalagent|PerplexityBot|CCBot" /var/log/nginx/access.log | wc -l
+
+<span class="comment"># Show top bots by request count</span>
+grep -oP '"[^"]*(?:GPTBot|ClaudeBot|Bytespider|meta-externalagent|PerplexityBot|CCBot)[^"]*"' /var/log/nginx/access.log | sort | uniq -c | sort -rn | head -20
+
+<span class="comment"># Estimate bandwidth by bot (requires %O in log format)</span>
+awk '/Bytespider/{sum += $10} END {print sum/1024/1024 " MB"}' /var/log/nginx/access.log</code></pre>
+  </div>
+
+  <div class="step-box">
+    <p><span class="step-num">4</span> <strong>Google Cloud / Firebase Hosting:</strong> Use Cloud Logging with a filter:</p>
+    <pre><code>resource.type="http_load_balancer"
+httpRequest.userAgent:"GPTBot" OR httpRequest.userAgent:"Bytespider"</code></pre>
+  </div>
+
+  <div class="callout">
+    <h4>💡 Shortcut: Check your robots.txt access first</h4>
+    <p>Compliant bots fetch your <code>robots.txt</code> before crawling. A spike in hits to <code>/robots.txt</code> — especially from data center IPs — is a strong signal that crawlers are active on your site. Check your access logs for <code>GET /robots.txt</code> entries.</p>
+  </div>
+
+  <h2>The cost breakdown: which bots are most expensive?</h2>
+  <p>Not all AI crawlers are equal in terms of bandwidth cost. Here's a rough estimate based on community reports and crawl frequency:</p>
+
+  <table class="cost-table">
+    <thead>
+      <tr><th>Bot</th><th>Company</th><th>Crawl Aggressiveness</th><th>Bandwidth Impact</th><th>Respects robots.txt?</th></tr>
+    </thead>
+    <tbody>
+      <tr class="highlight-row"><td>Bytespider</td><td>ByteDance (TikTok)</td><td>Very High</td><td>🔴 High</td><td>Inconsistent</td></tr>
+      <tr class="highlight-row"><td>GPTBot</td><td>OpenAI</td><td>High</td><td>🔴 High</td><td>Yes (since Aug 2023)</td></tr>
+      <tr><td>CCBot</td><td>Common Crawl</td><td>Medium-High</td><td>🟡 Medium</td><td>Generally yes</td></tr>
+      <tr><td>meta-externalagent</td><td>Meta</td><td>Medium</td><td>🟡 Medium</td><td>Yes</td></tr>
+      <tr><td>ClaudeBot</td><td>Anthropic</td><td>Medium</td><td>🟡 Medium</td><td>Yes</td></tr>
+      <tr><td>PerplexityBot</td><td>Perplexity AI</td><td>Medium</td><td>🟡 Medium</td><td>Generally yes</td></tr>
+      <tr><td>Google-Extended</td><td>Google</td><td>Low-Medium</td><td>🟢 Low</td><td>Yes (strict)</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Bytespider</strong> consistently shows up as the biggest cost driver. ByteDance's crawler is aggressive, crawls at high frequency, and has historically been inconsistent about honoring robots.txt. If you're seeing a big Vercel or AWS bandwidth spike and your logs show Bytespider — that's your culprit.</p>
+
+  <h2>Step 3: Estimate the damage</h2>
+
+  <p>Once you know which bot is responsible, you can estimate cost. Here's the math for common platforms:</p>
+
+  <pre><code><span class="comment"># Vercel bandwidth pricing (Pro plan): $0.15/GB beyond included amount</span>
+<span class="comment"># Get total bytes crawled by a specific bot from nginx logs:</span>
+awk '/Bytespider/ {sum += $10} END {printf "%.2f GB ($%.2f at Vercel Pro rates)\n", sum/1073741824, sum/1073741824 * 0.15}' /var/log/nginx/access.log
+
+<span class="comment"># AWS CloudFront: ~$0.085/GB (US/EU)</span>
+<span class="comment"># Cloudflare: Included in plan for cached, $0.08/GB for Workers/origins</span></code></pre>
+
+  <div class="callout callout-danger">
+    <h4>🚨 Real developer reports</h4>
+    <p>On HN and Reddit, developers have reported AI crawler bandwidth bills ranging from <strong>$50 to $1,200+ per month</strong> on platforms like Vercel, Netlify, and AWS. One common pattern: a SaaS with &lt;1,000 active users discovering their Vercel bill jumped 8x due to Bytespider crawling their entire site every few days.</p>
+  </div>
+
+  <h2>Step 4: Stop the bleeding</h2>
+
+  <p>Once you've identified the bot, you have three options in order of effectiveness:</p>
+
+  <h3>Option A: Update robots.txt (fastest, works for compliant bots)</h3>
+  <pre><code><span class="comment"># Add to your robots.txt</span>
+User-agent: Bytespider
+Disallow: /
+
+User-agent: GPTBot
+Disallow: /
+
+User-agent: CCBot
+Disallow: /</code></pre>
+  <p>For a complete list with all AI crawlers, see our <a href="https://lior-seats.github.io/crawlguard-waitlist/blog/block-ai-crawlers-robots-txt.html">full robots.txt blocking guide</a>.</p>
+
+  <h3>Option B: Cloudflare WAF rule (enforced, no trust in compliance)</h3>
+  <pre><code><span class="comment"># Cloudflare → Security → WAF → Custom Rules</span>
+<span class="comment"># Expression: (http.user_agent contains "Bytespider") or (http.user_agent contains "GPTBot")</span>
+<span class="comment"># Action: Block</span>
+<span class="comment"># This is enforced at the edge — the bot never reaches your origin or consumes your bandwidth</span></code></pre>
+
+  <h3>Option C: nginx/Apache block (origin-level enforcement)</h3>
+  <pre><code><span class="comment"># nginx — add to your server {} block</span>
+if ($http_user_agent ~* "(Bytespider|GPTBot|ClaudeBot|meta-externalagent|CCBot)") {
+    return 403;
+}</code></pre>
+
+  <div class="callout callout-warn">
+    <h4>⚠️ Cloudflare caching won't help here</h4>
+    <p>If you're already on Cloudflare, you might assume cached pages don't cost bandwidth. But if Cloudflare's cache is cold (or the bot bypasses cache with unique query parameters), requests still hit your origin. The fix is a WAF rule that blocks the bot before it reaches your cache or origin.</p>
+  </div>
+
+  <h2>Step 5: Monitor so it doesn't happen again</h2>
+
+  <p>The frustrating reality: even after you block a bot, new crawlers emerge, and existing crawlers change User-Agents or crawl patterns. Without ongoing monitoring, you won't know until your next bill arrives.</p>
+
+  <p>What you need:</p>
+  <ul>
+    <li>Alerting when a new AI crawler User-Agent appears in your logs</li>
+    <li>Per-bot bandwidth attribution (which bot is costing how much?)</li>
+    <li>Notification when a blocked bot reappears with a new User-Agent</li>
+    <li>Weekly or daily cost reports by crawler</li>
+  </ul>
+
+  <p>That's exactly what CrawlGuard monitors. We're building real-time AI crawler monitoring with per-bot cost attribution and instant alerts. Join the waitlist for early access pricing:</p>
+
+  <div class="cta-box">
+    <h3>Stop AI crawlers from silently draining your budget</h3>
+    <p>CrawlGuard monitors your infrastructure for AI crawler traffic, shows you which bot is costing how much, and alerts you within minutes of a spike.</p>
+    <a href="https://lior-seats.github.io/crawlguard-waitlist/" class="cta-btn">Join CrawlGuard Waitlist →</a>
+    <a href="https://lior-seats.github.io/crawl-check/" class="cta-btn-secondary">Check my site free</a>
+  </div>
+
+  <h2>Quick reference: AI crawler User-Agents</h2>
+  <pre><code>GPTBot              # OpenAI
+ClaudeBot           # Anthropic  
+anthropic-ai        # Anthropic (direct model requests)
+meta-externalagent  # Meta / Facebook
+Bytespider          # ByteDance / TikTok
+PerplexityBot       # Perplexity AI
+CCBot               # Common Crawl (used by many AI labs)
+Google-Extended     # Google AI training (NOT search)
+Applebot-Extended   # Apple AI / Siri training</code></pre>
+
+  <p>Copy-paste ready <code>robots.txt</code> rules: <a href="https://lior-seats.github.io/crawlguard-waitlist/blog/block-ai-crawlers-robots-txt.html">Full robots.txt blocking guide →</a></p>
+
+</main>
+
+<footer>
+  <p>© 2026 CrawlGuard · <a href="https://lior-seats.github.io/crawlguard-waitlist/">CrawlGuard Waitlist</a> · <a href="https://lior-seats.github.io/crawl-check/">Free Crawler Check</a> · <a href="https://lior-seats.github.io/crawlguard-waitlist/blog/block-ai-crawlers-robots-txt.html">Block AI Crawlers Guide</a></p>
+</footer>
+
+<script>
+  (function(){
+    var p = 'blog-ai-crawler-hosting-bill';
+    fetch('https://agent-control-plane-w3m9.onrender.com/api/hit?page=' + encodeURIComponent(p));
+  })();
+</script>
+</body>
+</html>

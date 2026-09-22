@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>How to Block GPTBot, ClaudeBot & AI Crawlers in robots.txt (2026 Guide)</title>
+  <meta name="description" content="Step-by-step guide to blocking GPTBot (OpenAI), ClaudeBot (Anthropic), meta-externalagent (Meta) and other AI crawlers using robots.txt. Includes copy-paste rules and verification steps." />
+  <link rel="canonical" href="https://lior-seats.github.io/crawlguard-waitlist/blog/block-ai-crawlers-robots-txt.html" />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://lior-seats.github.io/crawlguard-waitlist/blog/block-ai-crawlers-robots-txt.html" />
+  <meta property="og:title" content="How to Block GPTBot, ClaudeBot & AI Crawlers in robots.txt (2026 Guide)" />
+  <meta property="og:description" content="Copy-paste robots.txt rules to block OpenAI, Anthropic, Meta, ByteDance, and other AI crawlers from your site." />
+  <meta property="og:image" content="https://lior-seats.github.io/crawlguard-waitlist/og-image.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <style>
+    :root {
+      --bg: #0d0f14; --surface: #141720; --surface2: #1b1f2c;
+      --border: #252a38; --accent: #4f6ef7; --accent-h: #6b85ff;
+      --danger: #f75c5c; --text: #e8eaf2; --muted: #8890a8;
+      --success: #34d399; --radius: 10px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.7; font-size: 16px; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { color: var(--accent-h); text-decoration: underline; }
+    nav { display: flex; align-items: center; justify-content: space-between; padding: 1.2rem 2rem; border-bottom: 1px solid var(--border); background: rgba(13,15,20,0.95); position: sticky; top: 0; z-index: 100; }
+    .logo { font-weight: 700; font-size: 1.1rem; color: var(--text); display: flex; align-items: center; gap: 0.5rem; }
+    .logo span { color: var(--accent); }
+    .nav-cta { background: var(--accent); color: #fff; padding: 0.4rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; }
+    .nav-cta:hover { background: var(--accent-h); color: #fff; text-decoration: none; }
+    main { max-width: 760px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+    .breadcrumb { font-size: 0.85rem; color: var(--muted); margin-bottom: 1.5rem; }
+    .breadcrumb a { color: var(--muted); }
+    h1 { font-size: 2rem; font-weight: 800; line-height: 1.25; margin-bottom: 1rem; letter-spacing: -0.03em; }
+    .meta { color: var(--muted); font-size: 0.875rem; margin-bottom: 2.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1.5rem; }
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.5rem 0 0.75rem; color: var(--text); }
+    h3 { font-size: 1.1rem; font-weight: 600; margin: 1.5rem 0 0.5rem; color: var(--text); }
+    p { margin-bottom: 1rem; color: #cdd1e0; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; color: #cdd1e0; }
+    li { margin-bottom: 0.4rem; }
+    pre { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; overflow-x: auto; margin: 1.25rem 0; font-size: 0.875rem; line-height: 1.6; }
+    code { font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace; color: #a8d8a8; }
+    pre code { color: #c9d1e0; }
+    .comment { color: var(--muted); }
+    .bot-name { color: var(--accent); font-weight: 600; }
+    .table-wrap { overflow-x: auto; margin: 1.5rem 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th { background: var(--surface2); text-align: left; padding: 0.6rem 1rem; border: 1px solid var(--border); color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    td { padding: 0.6rem 1rem; border: 1px solid var(--border); color: #cdd1e0; }
+    tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+    .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+    .badge-red { background: rgba(247,92,92,0.15); color: var(--danger); }
+    .badge-green { background: rgba(52,211,153,0.12); color: var(--success); }
+    .callout { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: var(--radius); padding: 1.25rem 1.5rem; margin: 2rem 0; }
+    .callout-warn { border-left-color: #f7b55c; }
+    .callout h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text); }
+    .cta-box { background: linear-gradient(135deg, rgba(79,110,247,0.12), rgba(79,110,247,0.06)); border: 1px solid rgba(79,110,247,0.3); border-radius: 14px; padding: 2rem; margin: 3rem 0; text-align: center; }
+    .cta-box h3 { font-size: 1.25rem; margin-bottom: 0.5rem; margin-top: 0; }
+    .cta-box p { margin-bottom: 1.25rem; }
+    .cta-btn { display: inline-block; background: var(--accent); color: #fff; padding: 0.75rem 1.75rem; border-radius: 8px; font-weight: 700; font-size: 0.95rem; }
+    .cta-btn:hover { background: var(--accent-h); color: #fff; text-decoration: none; }
+    footer { text-align: center; padding: 2rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.875rem; }
+  </style>
+</head>
+<body>
+<nav>
+  <a href="https://lior-seats.github.io/crawlguard-waitlist/" class="logo">🛡️ <span>CrawlGuard</span></a>
+  <a href="https://lior-seats.github.io/crawlguard-waitlist/" class="nav-cta">Join Waitlist →</a>
+</nav>
+
+<main>
+  <div class="breadcrumb">
+    <a href="https://lior-seats.github.io/crawlguard-waitlist/">CrawlGuard</a> / Blog /
+    <span>Block AI Crawlers in robots.txt</span>
+  </div>
+
+  <h1>How to Block GPTBot, ClaudeBot & AI Crawlers in robots.txt (2026 Guide)</h1>
+  <div class="meta">September 2026 · 8 min read · <a href="https://lior-seats.github.io/crawl-check/">Check your site free →</a></div>
+
+  <p>AI crawlers from OpenAI, Anthropic, Meta, ByteDance, and others are crawling the web to build training datasets. If your site is publicly accessible, there's a good chance multiple AI bots are visiting it right now — consuming your bandwidth, burning through your Vercel/Cloudflare/AWS budget, and contributing to someone else's AI model without your consent.</p>
+
+  <p>The good news: you can block them in 5 minutes using your <code>robots.txt</code> file. This guide covers every major AI crawler, with copy-paste rules and verification steps.</p>
+
+  <h2>The quick version: block all major AI crawlers</h2>
+  <p>Add this to your <code>robots.txt</code> file to block all known AI training crawlers at once:</p>
+  <pre><code><span class="comment"># Block all major AI training crawlers</span>
+
+<span class="comment"># OpenAI</span>
+User-agent: GPTBot
+Disallow: /
+
+<span class="comment"># Anthropic</span>
+User-agent: ClaudeBot
+Disallow: /
+User-agent: anthropic-ai
+Disallow: /
+
+<span class="comment"># Meta / Facebook</span>
+User-agent: meta-externalagent
+Disallow: /
+User-agent: FacebookBot
+Disallow: /
+
+<span class="comment"># ByteDance / TikTok</span>
+User-agent: Bytespider
+Disallow: /
+
+<span class="comment"># Perplexity AI</span>
+User-agent: PerplexityBot
+Disallow: /
+
+<span class="comment"># Common Crawl (used for many AI datasets)</span>
+User-agent: CCBot
+Disallow: /
+
+<span class="comment"># Google Extended (AI training opt-out, separate from search)</span>
+User-agent: Google-Extended
+Disallow: /
+
+<span class="comment"># Apple AI</span>
+User-agent: Applebot-Extended
+Disallow: /</code></pre>
+
+  <div class="callout">
+    <h4>⚡ Verify your site right now</h4>
+    <p>Check which AI bots currently have access to your site: <a href="https://lior-seats.github.io/crawl-check/">CrawlGuard Free Checker →</a></p>
+  </div>
+
+  <h2>The complete AI crawler reference table</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>User-Agent</th><th>Company</th><th>Purpose</th><th>Risk Level</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>GPTBot</code></td><td>OpenAI</td><td>ChatGPT training data</td><td><span class="badge badge-red">High</span></td></tr>
+        <tr><td><code>ClaudeBot</code></td><td>Anthropic</td><td>Claude training data</td><td><span class="badge badge-red">High</span></td></tr>
+        <tr><td><code>anthropic-ai</code></td><td>Anthropic</td><td>Claude training data</td><td><span class="badge badge-red">High</span></td></tr>
+        <tr><td><code>meta-externalagent</code></td><td>Meta</td><td>Llama / AI training</td><td><span class="badge badge-red">High</span></td></tr>
+        <tr><td><code>Bytespider</code></td><td>ByteDance</td><td>AI training (TikTok)</td><td><span class="badge badge-red">High</span></td></tr>
+        <tr><td><code>PerplexityBot</code></td><td>Perplexity AI</td><td>Search + training data</td><td><span class="badge badge-red">High</span></td></tr>
+        <tr><td><code>CCBot</code></td><td>Common Crawl</td><td>Open dataset (used by many AI labs)</td><td><span class="badge badge-red">High</span></td></tr>
+        <tr><td><code>Google-Extended</code></td><td>Google</td><td>Gemini AI training (NOT search)</td><td><span class="badge badge-red">High</span></td></tr>
+        <tr><td><code>Applebot-Extended</code></td><td>Apple</td><td>Apple AI / Siri training</td><td><span class="badge badge-red">High</span></td></tr>
+        <tr><td><code>Googlebot</code></td><td>Google</td><td>Google Search indexing</td><td><span class="badge badge-green">Keep allowed</span></td></tr>
+        <tr><td><code>Bingbot</code></td><td>Microsoft</td><td>Bing Search indexing</td><td><span class="badge badge-green">Keep allowed</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-warn">
+    <h4>⚠️ Important: Google-Extended is NOT Googlebot</h4>
+    <p>Blocking <code>Google-Extended</code> does NOT affect your Google Search ranking. It only opts you out of Google's AI (Gemini) training data. Your regular search indexing is controlled by <code>Googlebot</code>. You can safely block <code>Google-Extended</code> without any SEO impact.</p>
+  </div>
+
+  <h2>Where is your robots.txt file?</h2>
+  <p>Your <code>robots.txt</code> must live at the root of your domain: <code>https://yourdomain.com/robots.txt</code></p>
+
+  <h3>Next.js</h3>
+  <pre><code><span class="comment">// app/robots.ts (Next.js 13+ App Router)</span>
+import { MetadataRoute } from 'next'
+
+export default function robots(): MetadataRoute.Robots {
+  return {
+    rules: [
+      { userAgent: 'GPTBot', disallow: '/' },
+      { userAgent: 'ClaudeBot', disallow: '/' },
+      { userAgent: 'anthropic-ai', disallow: '/' },
+      { userAgent: 'meta-externalagent', disallow: '/' },
+      { userAgent: 'Bytespider', disallow: '/' },
+      { userAgent: 'PerplexityBot', disallow: '/' },
+      { userAgent: 'CCBot', disallow: '/' },
+      { userAgent: 'Google-Extended', disallow: '/' },
+      { userAgent: '*', allow: '/' },
+    ],
+    sitemap: 'https://yourdomain.com/sitemap.xml',
+  }
+}</code></pre>
+
+  <h3>Static sites (GitHub Pages, Netlify, Vercel)</h3>
+  <p>Create a file named <code>robots.txt</code> in your public/static folder with the rules at the top of this guide. For Vercel, place it in <code>/public/robots.txt</code>. For GitHub Pages, place it in the root of your repository.</p>
+
+  <h3>WordPress</h3>
+  <p>In WordPress, go to <strong>Settings → Reading → Search Engine Visibility</strong>, then use a plugin like Yoast SEO or RankMath to add custom robots.txt rules. Alternatively, edit <code>robots.txt</code> directly at the root of your WordPress installation via FTP/SSH or your hosting file manager.</p>
+
+  <h2>How to verify your robots.txt is working</h2>
+  <p>After making changes, verify them in two ways:</p>
+
+  <ol>
+    <li><strong>Free instant check:</strong> Use <a href="https://lior-seats.github.io/crawl-check/">CrawlGuard's free crawler checker</a> — enter your domain and see exactly which AI bots are blocked or allowed.</li>
+    <li><strong>Manual verification:</strong> Fetch your robots.txt directly: <code>curl https://yourdomain.com/robots.txt</code> and confirm your rules are present.</li>
+    <li><strong>Google Search Console:</strong> Use the robots.txt Tester under Settings → robots.txt Tester to validate syntax (note: this only tests Googlebot rules, but it confirms syntax is valid).</li>
+  </ol>
+
+  <h2>Does robots.txt actually work?</h2>
+  <p>Mostly yes — with important nuances:</p>
+  <ul>
+    <li><strong>OpenAI (GPTBot):</strong> Respects robots.txt since August 2023. Confirmed compliance.</li>
+    <li><strong>Anthropic (ClaudeBot):</strong> Respects robots.txt. Also supports the <code>anthropic-ai</code> User-Agent for direct model requests.</li>
+    <li><strong>Google-Extended:</strong> Respects robots.txt. Google explicitly created this separate User-Agent so you can opt out of AI training without affecting search.</li>
+    <li><strong>Meta (meta-externalagent):</strong> Respects robots.txt as of 2023.</li>
+    <li><strong>Bytespider:</strong> Compliance is inconsistent. Some reports of ignoring disallow rules. Consider rate-limiting at the server level as well.</li>
+    <li><strong>CCBot (Common Crawl):</strong> Generally respects robots.txt but runs on a 6-week crawl cycle — changes may take time to take effect.</li>
+  </ul>
+
+  <div class="callout callout-warn">
+    <h4>⚠️ robots.txt is advisory, not enforced</h4>
+    <p>Any crawler can technically ignore your robots.txt. If you're dealing with aggressive or non-compliant bots, you'll need server-level blocking (Cloudflare WAF rules, nginx deny rules, or a monitoring tool that alerts you when bots reappear). robots.txt works for compliant bots — and all major AI labs have committed to honoring it.</p>
+  </div>
+
+  <h2>Server-level blocking for non-compliant crawlers</h2>
+  <p>If robots.txt isn't enough (particularly for Bytespider or other aggressive crawlers), you can block at the infrastructure level:</p>
+
+  <h3>Cloudflare (free tier)</h3>
+  <pre><code><span class="comment"># Cloudflare WAF Custom Rule (Firewall → WAF → Custom Rules)</span>
+<span class="comment"># Field: User Agent · Operator: contains · Value: Bytespider</span>
+<span class="comment"># Action: Block</span>
+
+<span class="comment"># Or use the pre-built "Bot Fight Mode" for automated bot blocking</span></code></pre>
+
+  <h3>nginx</h3>
+  <pre><code><span class="comment"># In your nginx.conf or server block:</span>
+map $http_user_agent $block_ai_crawlers {
+    default         0;
+    ~*GPTBot        1;
+    ~*ClaudeBot     1;
+    ~*anthropic-ai  1;
+    ~*Bytespider    1;
+    ~*PerplexityBot 1;
+    ~*CCBot         1;
+}
+
+server {
+    if ($block_ai_crawlers) {
+        return 403;
+    }
+}</code></pre>
+
+  <h2>Frequently asked questions</h2>
+
+  <h3>Will blocking AI crawlers hurt my SEO?</h3>
+  <p>No — as long as you don't block <code>Googlebot</code> or <code>Bingbot</code>. AI training crawlers (GPTBot, ClaudeBot, Google-Extended, etc.) are completely separate from search indexing. Blocking them has zero effect on your search rankings.</p>
+
+  <h3>Does blocking AI crawlers reduce my bandwidth costs?</h3>
+  <p>Yes, significantly. Developers have reported Vercel bandwidth bills increasing 5-20x due to AI crawlers — particularly Bytespider and GPTBot. Blocking them in robots.txt won't stop the requests (the crawler has to fetch robots.txt first), but it does dramatically reduce repeat crawling of all your content pages. For full bandwidth protection, combine robots.txt with server-level blocking.</p>
+
+  <h3>How often do AI crawlers visit my site?</h3>
+  <p>It varies by crawler. GPTBot typically crawls on a multi-week cycle. Bytespider and PerplexityBot are often more aggressive. The only way to know for sure is to check your server access logs or use a monitoring tool. <a href="https://lior-seats.github.io/crawl-check/">CrawlGuard's free checker</a> shows which bots currently have permission — for real-time traffic monitoring, join the <a href="https://lior-seats.github.io/crawlguard-waitlist/">CrawlGuard waitlist</a>.</p>
+
+  <h3>I updated my robots.txt. How long until crawlers stop?</h3>
+  <p>GPTBot and ClaudeBot typically re-check robots.txt before each crawl session and will stop relatively quickly (days). CCBot runs on a 6-week cycle, so it may take longer. Bytespider compliance is unpredictable — if you need immediate results, use server-level blocking.</p>
+
+  <div class="cta-box">
+    <h3>Is your site actually blocking these bots right now?</h3>
+    <p>Most developers think they've blocked AI crawlers — but their robots.txt has a syntax error, is missing a key User-Agent, or only covers some paths. Check your site in 10 seconds:</p>
+    <a href="https://lior-seats.github.io/crawl-check/" class="cta-btn">Check My Site Free →</a>
+    <p style="margin-top:1rem;font-size:0.85rem;color:var(--muted)">No signup required · Instant results · Check any domain</p>
+  </div>
+
+  <h2>Want continuous monitoring?</h2>
+  <p>Blocking AI crawlers with robots.txt is a good start — but it doesn't tell you when a new crawler appears, when an existing one starts ignoring your rules, or which bot is responsible for a bandwidth spike. That's what CrawlGuard monitors: real-time AI crawler attribution with per-bot cost estimates and instant alerts when something changes.</p>
+
+  <p><a href="https://lior-seats.github.io/crawlguard-waitlist/">Join the CrawlGuard waitlist →</a> (early access pricing)</p>
+
+</main>
+
+<footer>
+  <p>© 2026 CrawlGuard · <a href="https://lior-seats.github.io/crawlguard-waitlist/">Back to CrawlGuard</a> · <a href="https://lior-seats.github.io/crawl-check/">Free Crawler Check</a></p>
+</footer>
+
+<script>
+  (function(){
+    var p = 'blog-block-ai-crawlers-robots-txt';
+    fetch('https://agent-control-plane-w3m9.onrender.com/api/hit?page=' + encodeURIComponent(p));
+  })();
+</script>
+</body>
+</html>
