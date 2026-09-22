@@ -3,19 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>You're in — CrawlGuard</title>
+  <title>You're subscribed — CrawlGuard</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0a0a; color: #f0f0f0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
-    .card { background: #111; border: 1px solid #1e1e1e; border-radius: 16px; padding: 3rem 2.5rem; max-width: 520px; width: 100%; text-align: center; }
+    .card { background: #111; border: 1px solid #1e1e1e; border-radius: 16px; padding: 3rem 2.5rem; max-width: 480px; width: 100%; text-align: center; }
     .icon { font-size: 3rem; margin-bottom: 1rem; }
     h1 { font-size: 1.75rem; font-weight: 800; margin-bottom: 0.75rem; color: #f0f0f0; }
     p { color: #888; line-height: 1.7; margin-bottom: 1rem; font-size: 0.95rem; }
-    .steps { background: #1a1a1a; border-radius: 10px; padding: 1.5rem; text-align: left; margin: 1.5rem 0; }
-    .step { display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.5rem 0; border-bottom: 1px solid #2a2a2a; }
-    .step:last-child { border-bottom: none; }
-    .step-num { background: #e94560; color: #fff; width: 22px; height: 22px; border-radius: 50%; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
-    .step-text { font-size: 0.88rem; color: #bbb; line-height: 1.5; }
+    .highlight { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 10px; padding: 1.25rem 1.5rem; margin: 1.5rem 0; text-align: left; font-size: 0.9rem; color: #bbb; line-height: 1.6; }
     a { color: #e94560; text-decoration: none; }
     a:hover { text-decoration: underline; }
   </style>
@@ -23,18 +19,17 @@
 <body>
   <div class="card">
     <div class="icon">🎉</div>
-    <h1>You're in!</h1>
-    <p>Your subscription is confirmed. Check your inbox for a receipt from Stripe.</p>
-    <p>We'll be in touch within 24 hours with setup instructions to connect your Vercel log drain.</p>
+    <h1>You're subscribed!</h1>
+    <p>Your CrawlGuard Pro subscription is confirmed. You'll receive a receipt from Stripe shortly.</p>
 
-    <div class="steps">
-      <div class="step"><div class="step-num">1</div><div class="step-text"><strong>Check your email</strong> — receipt + welcome email on the way</div></div>
-      <div class="step"><div class="step-num">2</div><div class="step-text"><strong>Set up your log drain</strong> — Vercel Dashboard → Log Drains → Add Drain → paste your CrawlGuard URL</div></div>
-      <div class="step"><div class="step-num">3</div><div class="step-text"><strong>See your first bot report</strong> — usually within a few minutes of your first request</div></div>
+    <div class="highlight">
+      <strong style="color:#f0f0f0">What happens next</strong><br><br>
+      We'll email you within 24 hours with your account setup details and instructions to connect your site.
     </div>
 
-    <p style="font-size:0.85rem">Questions? Email us at <a href="mailto:support@user-sentry.com">support@user-sentry.com</a></p>
-    <p style="margin-top:1.5rem"><a href="https://lior-seats.github.io/crawlguard-waitlist/">← Back to CrawlGuard</a></p>
+    <p style="font-size:0.85rem;margin-top:1rem">
+      <a href="https://lior-seats.github.io/crawlguard-waitlist/">← Back to CrawlGuard</a>
+    </p>
   </div>
 </body>
 </html>
