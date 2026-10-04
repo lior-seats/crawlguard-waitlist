@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CrawlGuard — AI Crawler Monitor</title>
+  <meta name="description" content="Your CrawlGuard dashboard: per-bot AI crawler hit counts and estimated bandwidth cost over the last 7 days." />
+  <meta name="robots" content="noindex" />
+  <style>
+    :root {
+      --bg:       #0d0f14;
+      --surface:  #141720;
+      --surface2: #1b1f2c;
+      --border:   #252a38;
+      --accent:   #4f6ef7;
+      --accent-h: #6b85ff;
+      --danger:   #f75c5c;
+      --text:     #e8eaf2;
+      --muted:    #8890a8;
+      --success:  #34d399;
+      --radius:   10px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      font-size: 16px;
+      min-height: 100vh;
+    }
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.1rem 2rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(13,15,20,0.93);
+      backdrop-filter: blur(8px);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .nav-brand { font-size: 1.1rem; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 0.5rem; }
+    .nav-badge { font-size: 0.7rem; font-weight: 700; background: var(--accent); color: #fff;
+                 padding: 0.15rem 0.5rem; border-radius: 20px; letter-spacing: 0.04em; text-transform: uppercase; }
+    .main { max-width: 900px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+    h1 { font-size: 1.8rem; font-weight: 800; color: var(--text); margin-bottom: 0.4rem; }
+    .subtitle { color: var(--muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+
+    /* ── Loading / Error states ── */
+    #loading-state, #error-state { display: none; text-align: center; padding: 4rem 1rem; }
+    #loading-state.visible, #error-state.visible { display: block; }
+    .spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--accent);
+               border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-msg { color: var(--danger); font-size: 1rem; }
+    .error-hint { color: var(--muted); font-size: 0.875rem; margin-top: 0.5rem; }
+
+    /* ── Dashboard content ── */
+    #dashboard { display: none; }
+    #dashboard.visible { display: block; }
+
+    /* ── Drain URL box ── */
+    .drain-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .drain-label { font-size: 0.8rem; font-weight: 700; color: var(--muted); letter-spacing: 0.08em;
+                   text-transform: uppercase; margin-bottom: 0.6rem; }
+    .drain-url-row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+    .drain-url { font-family: 'SFMono-Regular', 'Consolas', monospace; font-size: 0.82rem; color: var(--success);
+                 background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
+                 padding: 0.55rem 0.9rem; flex: 1; min-width: 0; overflow: hidden;
+                 text-overflow: ellipsis; white-space: nowrap; word-break: break-all; }
+    .btn-copy {
+      background: var(--accent); color: #fff; border: none; border-radius: 7px;
+      padding: 0.55rem 1.1rem; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+      transition: background 0.15s; white-space: nowrap; flex-shrink: 0;
+    }
+    .btn-copy:hover { background: var(--accent-h); }
+    .btn-copy.copied { background: var(--success); color: #000; }
+
+    /* Setup instructions collapsible */
+    details { margin-top: 0.9rem; }
+    details summary {
+      font-size: 0.83rem; color: var(--accent); cursor: pointer; user-select: none;
+      list-style: none; display: flex; align-items: center; gap: 0.3rem;
+    }
+    details summary::before { content: '▸'; transition: transform 0.15s; }
+    details[open] summary::before { transform: rotate(90deg); }
+    .setup-steps {
+      margin-top: 0.75rem; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 1rem 1.25rem;
+    }
+    .setup-steps ol { padding-left: 1.25rem; }
+    .setup-steps li { font-size: 0.875rem; color: var(--muted); margin-bottom: 0.4rem; line-height: 1.55; }
+    .setup-steps li strong { color: var(--text); }
+
+    /* ── Stats summary row ── */
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+                 gap: 1rem; margin-bottom: 2rem; }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 1.1rem 1.25rem;
+    }
+    .stat-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em;
+                  color: var(--muted); margin-bottom: 0.35rem; }
+    .stat-value { font-size: 1.7rem; font-weight: 800; color: var(--text); line-height: 1.15; }
+    .stat-sub { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center; padding: 3.5rem 1rem;
+      background: var(--surface); border: 1px dashed var(--border); border-radius: var(--radius);
+      margin-bottom: 2rem;
+    }
+    .empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+    .empty-title { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+    .empty-desc { font-size: 0.875rem; color: var(--muted); max-width: 380px; margin: 0 auto; }
+
+    /* ── Chart ── */
+    .chart-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 1.25rem 1.5rem; margin-bottom: 2rem;
+    }
+    .card-title { font-size: 0.9rem; font-weight: 700; color: var(--text); margin-bottom: 1.25rem; }
+    .chart-wrap { position: relative; height: 220px; }
+
+    /* ── Table ── */
+    .table-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 1.25rem 1.5rem; margin-bottom: 2rem; overflow-x: auto;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    th { text-align: left; font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+         letter-spacing: 0.07em; color: var(--muted); padding: 0 0.75rem 0.75rem; }
+    td { padding: 0.7rem 0.75rem; border-top: 1px solid var(--border); color: var(--text); }
+    tr:first-child td { border-top: none; }
+    .bot-name { font-weight: 600; }
+    .pct-bar-wrap { display: flex; align-items: center; gap: 0.6rem; }
+    .pct-bar-bg { flex: 1; height: 6px; background: var(--border); border-radius: 99px; min-width: 60px; }
+    .pct-bar { height: 100%; border-radius: 99px; background: var(--accent); }
+    .pct-label { font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
+    .cost { font-family: 'SFMono-Regular', 'Consolas', monospace; font-size: 0.82rem; color: var(--success); }
+
+    /* ── Footer total ── */
+    .total-row {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 1rem 1.5rem; font-size: 0.9rem; color: var(--muted);
+      display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+    }
+    .total-row strong { color: var(--text); }
+
+    @media (max-width: 600px) {
+      nav { padding: 1rem 1.1rem; }
+      .main { padding: 1.5rem 1rem; }
+      h1 { font-size: 1.4rem; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">
+    🛡️ CrawlGuard
+    <span class="nav-badge">Pro</span>
+  </div>
+  <span id="nav-email" style="font-size:0.82rem;color:var(--muted)"></span>
+</nav>
+
+<main class="main">
+  <h1>AI Crawler Monitor</h1>
+  <p class="subtitle" id="page-subtitle">Last 7 days · Loading your data…</p>
+
+  <!-- Loading -->
+  <div id="loading-state" class="visible">
+    <div class="spinner"></div>
+    <p style="color:var(--muted);font-size:0.9rem">Loading your crawler data…</p>
+  </div>
+
+  <!-- Error -->
+  <div id="error-state">
+    <p class="error-msg" id="error-msg">Something went wrong.</p>
+    <p class="error-hint" id="error-hint"></p>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="dashboard">
+
+    <!-- Drain URL -->
+    <div class="drain-card">
+      <div class="drain-label">Your Vercel Log Drain URL</div>
+      <div class="drain-url-row">
+        <div class="drain-url" id="drain-url-text">–</div>
+        <button class="btn-copy" id="copy-btn" onclick="copyDrainUrl()">Copy</button>
+      </div>
+      <details>
+        <summary>Setup instructions</summary>
+        <div class="setup-steps">
+          <ol>
+            <li>In <strong>Vercel Dashboard</strong>, open your project → <strong>Settings → Log Drains</strong></li>
+            <li>Click <strong>Add Drain</strong>, choose <strong>HTTP</strong> as the delivery type</li>
+            <li>Paste your drain URL above into the URL field</li>
+            <li>Set <strong>Sources</strong> to <em>Request logs</em> (at minimum)</li>
+            <li>Save — Vercel will start forwarding logs within minutes</li>
+          </ol>
+        </div>
+      </details>
+    </div>
+
+    <!-- Stats summary -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Total AI Hits</div>
+        <div class="stat-value" id="stat-hits">–</div>
+        <div class="stat-sub">last 7 days</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Est. Bandwidth Cost</div>
+        <div class="stat-value" id="stat-cost">–</div>
+        <div class="stat-sub">@$0.20/GB Vercel rate</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Bot Types Seen</div>
+        <div class="stat-value" id="stat-bots">–</div>
+        <div class="stat-sub">distinct crawlers</div>
+      </div>
+    </div>
+
+    <!-- Empty state (shown when no hits yet) -->
+    <div class="empty-state" id="empty-state" style="display:none">
+      <div class="empty-icon">📡</div>
+      <div class="empty-title">Waiting for your first crawler hit</div>
+      <div class="empty-desc">Make sure your Vercel log drain is connected. AI crawler data will appear here once traffic arrives.</div>
+    </div>
+
+    <!-- Chart -->
+    <div class="chart-card" id="chart-section">
+      <div class="card-title">Hits by bot — last 7 days</div>
+      <div class="chart-wrap">
+        <canvas id="bot-chart"></canvas>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-card" id="table-section">
+      <div class="card-title">Per-bot breakdown</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Bot</th>
+            <th>Hits (7d)</th>
+            <th>Est. Cost</th>
+            <th>% of AI Traffic</th>
+          </tr>
+        </thead>
+        <tbody id="bot-table-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Total footer -->
+    <div class="total-row" id="total-row">
+      <strong id="total-hits-label">–</strong> total AI crawler hits ·
+      Estimated cost: <strong id="total-cost-label">–</strong>
+    </div>
+
+  </div><!-- /dashboard -->
+</main>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+  const API_BASE = "https://agent-control-plane-w3m9.onrender.com";
+  let _drainUrl = "";
+  let _chart = null;
+
+  // Bot colours palette
+  const BOT_COLOURS = [
+    "#4f6ef7","#f75c5c","#34d399","#f59e0b","#a78bfa",
+    "#38bdf8","#fb923c","#e879f9","#94a3b8"
+  ];
+
+  function getToken() {
+    return new URLSearchParams(window.location.search).get("token") || "";
+  }
+
+  function showError(msg, hint = "") {
+    document.getElementById("loading-state").classList.remove("visible");
+    const es = document.getElementById("error-state");
+    es.classList.add("visible");
+    document.getElementById("error-msg").textContent = msg;
+    document.getElementById("error-hint").textContent = hint;
+  }
+
+  function fmt(n) {
+    return n >= 1000 ? (n / 1000).toFixed(1) + "k" : String(n);
+  }
+  function fmtCost(v) {
+    if (v === 0) return "$0.00";
+    if (v < 0.01) return "<$0.01";
+    return "$" + v.toFixed(2);
+  }
+
+  async function loadDashboard() {
+    const token = getToken();
+    if (!token) {
+      showError("No token found in URL.", "Check your welcome email for the correct dashboard link.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/api/crawlguard/dashboard?token=${encodeURIComponent(token)}`);
+      if (res.status === 401) {
+        const body = await res.json().catch(() => ({}));
+        showError(
+          body.error || "Invalid token — check your welcome email for the correct link.",
+          "If you lost your link, contact support."
+        );
+        return;
+      }
+      if (!res.ok) {
+        showError("Server error — please try again shortly.", `HTTP ${res.status}`);
+        return;
+      }
+
+      const data = await res.json();
+      render(data, token);
+    } catch (err) {
+      showError("Could not reach the CrawlGuard server.", "Check your internet connection and try again.");
+    }
+  }
+
+  function render(data, token) {
+    document.getElementById("loading-state").classList.remove("visible");
+    const dash = document.getElementById("dashboard");
+    dash.classList.add("visible");
+
+    // Nav email
+    document.getElementById("nav-email").textContent = data.subscriber?.email || "";
+    document.getElementById("page-subtitle").textContent = "Last 7 days · " + (data.subscriber?.email || "");
+
+    // Drain URL
+    _drainUrl = data.subscriber?.drainUrl || `${API_BASE}/api/crawlguard/drain?token=${token}`;
+    document.getElementById("drain-url-text").textContent = _drainUrl;
+
+    // Stats
+    document.getElementById("stat-hits").textContent = fmt(data.totalHits7d || 0);
+    document.getElementById("stat-cost").textContent  = fmtCost(data.totalCost || 0);
+    document.getElementById("stat-bots").textContent  = (data.bots || []).length;
+    document.getElementById("total-hits-label").textContent = fmt(data.totalHits7d || 0);
+    document.getElementById("total-cost-label").textContent = fmtCost(data.totalCost || 0);
+
+    const bots = data.bots || [];
+
+    if (bots.length === 0) {
+      document.getElementById("empty-state").style.display  = "";
+      document.getElementById("chart-section").style.display = "none";
+      document.getElementById("table-section").style.display = "none";
+      document.getElementById("total-row").style.display     = "none";
+      return;
+    }
+
+    // Chart
+    const labels = bots.map(b => b.name);
+    const values = bots.map(b => b.hits7d);
+    const colours = bots.map((_, i) => BOT_COLOURS[i % BOT_COLOURS.length]);
+
+    const ctx = document.getElementById("bot-chart").getContext("2d");
+    if (_chart) _chart.destroy();
+    _chart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [{
+          label: "Hits (7d)",
+          data: values,
+          backgroundColor: colours,
+          borderRadius: 5,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` ${ctx.parsed.y} hits`
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: "rgba(255,255,255,0.05)" },
+            ticks: { color: "#8890a8", font: { size: 12 } }
+          },
+          y: {
+            grid: { color: "rgba(255,255,255,0.05)" },
+            ticks: { color: "#8890a8", font: { size: 12 }, precision: 0 },
+            beginAtZero: true
+          }
+        }
+      }
+    });
+
+    // Table
+    const tbody = document.getElementById("bot-table-body");
+    tbody.innerHTML = "";
+    const total = data.totalHits7d || 1;
+    bots.forEach((bot, i) => {
+      const pct = total > 0 ? Math.round((bot.hits7d / total) * 100) : 0;
+      const colour = BOT_COLOURS[i % BOT_COLOURS.length];
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><span class="bot-name" style="color:${colour}">${escHtml(bot.name)}</span></td>
+        <td>${fmt(bot.hits7d)}</td>
+        <td class="cost">${fmtCost(bot.estimatedCost)}</td>
+        <td>
+          <div class="pct-bar-wrap">
+            <div class="pct-bar-bg"><div class="pct-bar" style="width:${pct}%;background:${colour}"></div></div>
+            <span class="pct-label">${pct}%</span>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  function copyDrainUrl() {
+    if (!_drainUrl) return;
+    navigator.clipboard.writeText(_drainUrl).then(() => {
+      const btn = document.getElementById("copy-btn");
+      btn.textContent = "Copied!";
+      btn.classList.add("copied");
+      setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 2000);
+    });
+  }
+
+  // Page hit
+  fetch(`${API_BASE}/api/hit?page=crawlguard-dashboard`).catch(() => {});
+
+  // Load data
+  loadDashboard();
+</script>
+</body>
+</html>
